@@ -33,16 +33,16 @@ with st.form("add_property_form"):
             rent_value = net_value * (rental_percent / 100)
 
             st.session_state.records.append({
-                "Property Type": property_type,
-                "Price": price,
-                "Down Payment": down_payment,
-                "Net Value": net_value,
-                "Interest Rate (%)": interest_rate,
+                "Type": property_type,
+                "Price": f"{price:,.2f}",
+                "Down Pay": f"{down_payment:,.2f}",
+                "Net Value": f"{net_value:,.2f}",
+                "Rate%": interest_rate,
                 "Years": years,
-                "Total Interest": total_interest,
-                "Total w/ Interest": total_with_interest,
-                "Monthly Payment": monthly_payment,
-                f"Annual Rent ({rental_percent}%)": rent_value
+                "Interest": f"{total_interest:,.2f}",
+                "Total": f"{total_with_interest:,.2f}",
+                "Monthly": f"{monthly_payment:,.2f}",
+                f"Rent({rental_percent}%)": f"{rent_value:,.2f}"
             })
             st.success("Property added successfully.")
 
@@ -52,62 +52,59 @@ if st.session_state.records:
     st.dataframe(df.style.format(precision=2), use_container_width=True)
 
     if st.button("📄 Export to PDF"):
-        class CustomPDF(FPDF):
+        class PDF(FPDF):
             def __init__(self):
                 super().__init__(orientation='L', unit='mm', format='A4')
+                self.set_auto_page_break(auto=True, margin=15)
+                self.set_margins(10, 10, 10)
                 
             def header(self):
-                self.set_font("Helvetica", 'B', 14)
+                self.set_font("Helvetica", 'B', 12)
                 self.cell(0, 10, "Real Estate Portfolio Summary", ln=True, align='C')
-                self.ln(12)
+                self.ln(8)
                 
             def footer(self):
                 self.set_y(-15)
                 self.set_font("Helvetica", 'I', 8)
                 self.cell(0, 10, f"Page {self.page_no()}", align='C')
                 
-            def create_table(self, dataframe):
-                self.set_font("Helvetica", '', 8)
-                col_width = self.w / len(dataframe.columns)
+            def create_table(self, data):
+                self.set_font("Helvetica", '', 7)
+                col_widths = [28, 30, 28, 28, 20, 20, 30, 30, 28, 28]  # Custom widths
                 row_height = 8
                 
-                # Table Header
+                # Header
                 self.set_fill_color(200, 230, 255)
-                for col in dataframe.columns:
-                    self.cell(col_width, row_height, str(col), border=1, fill=True, align='C')
+                for i, col in enumerate(data.columns):
+                    self.cell(col_widths[i], row_height, str(col), border=1, fill=True, align='C')
                 self.ln(row_height)
                 
-                # Table Data
-                for _, row in dataframe.iterrows():
-                    for item in row:
-                        text = f"{item:,.2f}" if isinstance(item, float) else str(item)
-                        self.cell(col_width, row_height, text, border=1, align='C')
+                # Data
+                for _, row in data.iterrows():
+                    for i, item in enumerate(row):
+                        self.cell(col_widths[i], row_height, str(item), border=1, align='C')
                     self.ln(row_height)
-                self.ln(10)
 
         # Prepare data
-        numeric_cols = ['Price', 'Down Payment', 'Net Value', 'Total Interest',
-                       'Total w/ Interest', 'Monthly Payment', 
-                       df.columns[df.columns.str.contains('Annual Rent')][0]]
+        df_pdf = df.copy()
+        df_pdf.columns = [str(col)[:12] for col in df_pdf.columns]  # Shorten column names
         
-        df[numeric_cols] = df[numeric_cols].applymap(lambda x: f"{x:,.2f}")
-
         # Generate PDF
-        pdf = CustomPDF()
+        pdf = PDF()
         pdf.add_page()
-        pdf.create_table(df)
+        pdf.create_table(df_pdf)
         
-        output_file = "real_estate_portfolio.pdf"
-        pdf.output(output_file)
+        output_path = "real_estate_report.pdf"
+        pdf.output(output_path)
         
-        with open(output_file, "rb") as f:
+        with open(output_path, "rb") as f:
             st.download_button(
-                "📥 Download Full Report",
+                "📥 Download PDF Report",
                 data=f,
-                file_name=output_file,
+                file_name=output_path,
                 mime="application/pdf"
             )
-        os.remove(output_file)
+        os.remove(output_path)
 
     if st.button("🗑️ Clear All"):
         st.session_state.records.clear()
