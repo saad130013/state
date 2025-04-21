@@ -111,3 +111,4 @@ if st.session_state.records:
     if st.button("🗑️ مسح جميع العقارات"):
         st.session_state.records.clear()
         st.success("✅ تم مسح الجدول.")
+        
