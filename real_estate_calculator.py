@@ -1,6 +1,8 @@
 
 import streamlit as st
 import pandas as pd
+from fpdf import FPDF
+import os
 
 st.set_page_config(page_title="حاسبة شراء العقار", layout="wide")
 
@@ -43,24 +45,64 @@ with st.form("add_property_form"):
             rental_value = original_value * (rental_percent / 100)
 
             st.session_state.records.append({
-                "نوع العقار": property_type,
-                "سعر العقار": price,
-                "الدفعة المقدمة": down_payment,
-                "قيمة العقار الأصلي": original_value,
-                "نسبة الفائدة السنوية": interest_rate,
-                "عدد السنوات": years,
-                "إجمالي الفوائد": total_interest,
-                "الإجمالي مع الفوائد": total_amount,
-                "القسط الشهري": monthly_payment,
-                f"قيمة الإيجار ({rental_percent}%)": rental_value
+                "Property Type": property_type,
+                "Price": price,
+                "Down Payment": down_payment,
+                "Net Property Value": original_value,
+                "Annual Interest Rate (%)": interest_rate,
+                "Years": years,
+                "Total Interest": total_interest,
+                "Total With Interest": total_amount,
+                "Monthly Payment": monthly_payment,
+                f"Annual Rent ({rental_percent}%)": rental_value
             })
             st.success("✅ تم إضافة العقار إلى الجدول.")
 
-# عرض الجدول من اليمين لليسار
+# عرض الجدول
 st.markdown("### 📋 جدول العقارات")
 if st.session_state.records:
     df = pd.DataFrame(st.session_state.records)
     st.dataframe(df.style.format(precision=2), use_container_width=True, height=500)
+
+    # زر تصدير إلى PDF
+    if st.button("📄 تصدير إلى PDF"):
+        class PDF(FPDF):
+            def header(self):
+                self.set_font("Arial", 'B', 14)
+                self.cell(0, 10, "Real Estate Purchase Summary", ln=True, align='C')
+                self.ln(5)
+
+            def table(self, dataframe):
+                self.set_font("Arial", '', 9)
+                col_width = self.w / (len(dataframe.columns) + 1)
+                row_height = 6
+
+                # Header
+                self.set_fill_color(230, 230, 250)
+                for col in dataframe.columns:
+                    self.cell(col_width, row_height, str(col), border=1, fill=True)
+                self.ln(row_height)
+
+                # Rows
+                for _, row in dataframe.iterrows():
+                    for item in row:
+                        self.cell(col_width, row_height, str(round(item, 2)) if isinstance(item, (int, float)) else str(item), border=1)
+                    self.ln(row_height)
+
+        pdf = PDF()
+        pdf.add_page()
+        pdf.table(df)
+
+        output_path = "real_estate_report.pdf"
+        pdf.output(output_path)
+        with open(output_path, "rb") as file:
+            st.download_button(
+                label="📥 تحميل ملف PDF",
+                data=file,
+                file_name="real_estate_report.pdf",
+                mime="application/pdf"
+            )
+        os.remove(output_path)
 else:
     st.info("لم يتم إضافة أي عقار بعد.")
 
