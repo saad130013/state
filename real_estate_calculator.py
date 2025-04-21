@@ -2,7 +2,7 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="حاسبة شراء العقار", layout="centered")
+st.set_page_config(page_title="حاسبة شراء العقار", layout="wide")
 
 st.title("🏠 حاسبة شراء العقار")
 
@@ -17,9 +17,7 @@ with st.form("add_property_form"):
     property_type = st.selectbox("نوع العقار", ["شقة", "بيت", "فيلا"])
     price = st.number_input("سعر العقار", min_value=10000.0, step=1000.0)
 
-    # السماح بإدخال الدفعة دون شرط مسبق، ثم التحقق بعد ذلك
     down_payment = st.number_input("الدفعة المقدمة", min_value=0.0, step=1000.0)
-
     interest_rate = st.selectbox("نسبة الفائدة السنوية (%)", [round(i, 1) for i in [x * 0.1 for x in range(10, 71)]])
     years = st.slider("مدة التمويل (عدد السنوات)", min_value=1, max_value=25, step=1)
     rental_percent = st.number_input("نسبة الإيجار السنوية (%)", min_value=0.0, max_value=100.0, value=5.0, step=0.1)
@@ -36,7 +34,6 @@ with st.form("add_property_form"):
             monthly_payment = total_amount / (years * 12)
             rental_value = original_value * (rental_percent / 100)
 
-            # تخزين في الجلسة
             st.session_state.records.append({
                 "نوع العقار": property_type,
                 "سعر العقار": price,
@@ -51,11 +48,11 @@ with st.form("add_property_form"):
             })
             st.success("✅ تم إضافة العقار إلى الجدول.")
 
-# عرض الجدول
+# عرض الجدول بشكل عريض
 st.markdown("### 📋 جدول العقارات")
 if st.session_state.records:
     df = pd.DataFrame(st.session_state.records)
-    st.dataframe(df.style.format(precision=2), use_container_width=True)
+    st.dataframe(df.style.format(precision=2), use_container_width=True, height=500)
 else:
     st.info("لم يتم إضافة أي عقار بعد.")
 
