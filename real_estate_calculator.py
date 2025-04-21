@@ -4,6 +4,14 @@ import pandas as pd
 
 st.set_page_config(page_title="حاسبة شراء العقار", layout="wide")
 
+st.markdown(""" 
+    <style>
+        .stDataFrameContainer {
+            direction: rtl;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("🏠 حاسبة شراء العقار")
 
 # جدول لتخزين البيانات في الجلسة
@@ -48,7 +56,7 @@ with st.form("add_property_form"):
             })
             st.success("✅ تم إضافة العقار إلى الجدول.")
 
-# عرض الجدول بشكل عريض
+# عرض الجدول من اليمين لليسار
 st.markdown("### 📋 جدول العقارات")
 if st.session_state.records:
     df = pd.DataFrame(st.session_state.records)
