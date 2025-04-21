@@ -8,11 +8,9 @@ st.set_page_config(page_title="Real Estate Calculator", layout="wide")
 
 st.title("🏠 Real Estate Purchase Calculator")
 
-# Initialize session state
 if "records" not in st.session_state:
     st.session_state.records = []
 
-# Input form
 with st.form("add_property_form"):
     st.subheader("📋 Enter Property Details")
 
@@ -49,15 +47,16 @@ with st.form("add_property_form"):
             })
             st.success("Property added successfully.")
 
-# Display table
 st.markdown("### 📊 Properties Summary")
 if st.session_state.records:
     df = pd.DataFrame(st.session_state.records)
     st.dataframe(df.style.format(precision=2), use_container_width=True)
 
-    # Export to PDF
     if st.button("📄 Export to PDF"):
         class PDF(FPDF):
+            def __init__(self):
+                super().__init__(orientation='L', unit='mm', format='A4')
+
             def header(self):
                 self.set_font("Helvetica", 'B', 12)
                 self.cell(0, 10, "Real Estate Summary", ln=True, align='C')
@@ -83,7 +82,7 @@ if st.session_state.records:
         pdf.add_page()
         pdf.table(df)
 
-        file_path = "real_estate_summary_fpdf2.pdf"
+        file_path = "real_estate_summary_landscape.pdf"
         pdf.output(file_path)
 
         with open(file_path, "rb") as f:
