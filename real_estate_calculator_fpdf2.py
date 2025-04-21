@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from fpdf import FPDF
@@ -53,41 +52,62 @@ if st.session_state.records:
     st.dataframe(df.style.format(precision=2), use_container_width=True)
 
     if st.button("📄 Export to PDF"):
-        class PDF(FPDF):
+        class CustomPDF(FPDF):
             def __init__(self):
                 super().__init__(orientation='L', unit='mm', format='A4')
-
+                
             def header(self):
-                self.set_font("Helvetica", 'B', 12)
-                self.cell(0, 10, "Real Estate Summary", ln=True, align='C')
-                self.ln(5)
-
-            def table(self, dataframe):
-                self.set_font("Helvetica", '', 9)
-                col_width = self.w / (len(dataframe.columns) + 1)
-                row_height = 6
+                self.set_font("Helvetica", 'B', 14)
+                self.cell(0, 10, "Real Estate Portfolio Summary", ln=True, align='C')
+                self.ln(12)
+                
+            def footer(self):
+                self.set_y(-15)
+                self.set_font("Helvetica", 'I', 8)
+                self.cell(0, 10, f"Page {self.page_no()}", align='C')
+                
+            def create_table(self, dataframe):
+                self.set_font("Helvetica", '', 8)
+                col_width = self.w / len(dataframe.columns)
+                row_height = 8
+                
+                # Table Header
                 self.set_fill_color(200, 230, 255)
-
                 for col in dataframe.columns:
-                    self.cell(col_width, row_height, str(col), border=1, fill=True)
+                    self.cell(col_width, row_height, str(col), border=1, fill=True, align='C')
                 self.ln(row_height)
-
+                
+                # Table Data
                 for _, row in dataframe.iterrows():
                     for item in row:
                         text = f"{item:,.2f}" if isinstance(item, float) else str(item)
-                        self.cell(col_width, row_height, text, border=1)
+                        self.cell(col_width, row_height, text, border=1, align='C')
                     self.ln(row_height)
+                self.ln(10)
 
-        pdf = PDF()
+        # Prepare data
+        numeric_cols = ['Price', 'Down Payment', 'Net Value', 'Total Interest',
+                       'Total w/ Interest', 'Monthly Payment', 
+                       df.columns[df.columns.str.contains('Annual Rent')][0]]
+        
+        df[numeric_cols] = df[numeric_cols].applymap(lambda x: f"{x:,.2f}")
+
+        # Generate PDF
+        pdf = CustomPDF()
         pdf.add_page()
-        pdf.table(df)
-
-        file_path = "real_estate_summary_landscape.pdf"
-        pdf.output(file_path)
-
-        with open(file_path, "rb") as f:
-            st.download_button("📥 Download PDF", f, file_name="real_estate_summary.pdf", mime="application/pdf")
-        os.remove(file_path)
+        pdf.create_table(df)
+        
+        output_file = "real_estate_portfolio.pdf"
+        pdf.output(output_file)
+        
+        with open(output_file, "rb") as f:
+            st.download_button(
+                "📥 Download Full Report",
+                data=f,
+                file_name=output_file,
+                mime="application/pdf"
+            )
+        os.remove(output_file)
 
     if st.button("🗑️ Clear All"):
         st.session_state.records.clear()
